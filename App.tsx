@@ -418,11 +418,11 @@ const App: React.FC = () => {
         <div className="glass-panel p-8 rounded-2xl border border-white/5">
           <h3 className="text-xl font-bold text-white mb-4">Getting Started</h3>
           <p className="text-gray-400 mb-6">Our RESTful API allows you to programmatically generate brand concepts and visualizations. All requests require an `Authorization` header with your API key.</p>
-          <div className="bg-black/50 p-4 rounded-lg font-mono text-sm text-primary-300 border border-white/5 overflow-x-auto">
-            curl -X POST https://api.lumina.ai/v1/concepts \<br />
-            &nbsp;&nbsp;-H "Authorization: Bearer YOUR_API_KEY" \<br />
-            &nbsp;&nbsp;-d '{"business": "Aero", "industry": "Drones"}'
-          </div>
+          <pre className="bg-black/50 p-4 rounded-lg font-mono text-sm text-primary-300 border border-white/5 overflow-x-auto whitespace-pre-wrap">
+{`curl -X POST https://api.lumina.ai/v1/concepts \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -d '{"business": "Aero", "industry": "Drones"}'`}
+          </pre>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
