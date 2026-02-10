@@ -3,6 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { LogoConcept } from '../types';
 
 export const generateConcepts = async (businessName: string, industry: string, style: string): Promise<LogoConcept[]> => {
+  // Use process.env.API_KEY exclusively as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `
@@ -71,6 +72,7 @@ export const generateConcepts = async (businessName: string, industry: string, s
 };
 
 export const refineConcept = async (originalConcept: LogoConcept, feedback: string): Promise<LogoConcept> => {
+  // Use process.env.API_KEY exclusively as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
@@ -127,6 +129,7 @@ export const refineConcept = async (originalConcept: LogoConcept, feedback: stri
 };
 
 export const generateLogoVisual = async (visualDescription: string): Promise<string> => {
+  // Use process.env.API_KEY exclusively as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
@@ -165,6 +168,7 @@ export const generateLogoVisual = async (visualDescription: string): Promise<str
 };
 
 export const editLogoVisual = async (imageBase64: string, editPrompt: string): Promise<string> => {
+  // Use process.env.API_KEY exclusively as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
