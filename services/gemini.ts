@@ -1,10 +1,9 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { LogoConcept } from '../types';
 
 export const generateConcepts = async (businessName: string, industry: string, style: string): Promise<LogoConcept[]> => {
-  // Use process.env.API_KEY exclusively as per guidelines
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Use import.meta.env.VITE_GEMINI_API_KEY as requested for Vite/Vercel environment compatibility
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
   
   const prompt = `
     You are a world-class brand identity designer. 
@@ -72,8 +71,7 @@ export const generateConcepts = async (businessName: string, industry: string, s
 };
 
 export const refineConcept = async (originalConcept: LogoConcept, feedback: string): Promise<LogoConcept> => {
-  // Use process.env.API_KEY exclusively as per guidelines
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
   const prompt = `
     You are an expert design consultant iteratively refining a logo concept.
@@ -129,8 +127,7 @@ export const refineConcept = async (originalConcept: LogoConcept, feedback: stri
 };
 
 export const generateLogoVisual = async (visualDescription: string): Promise<string> => {
-  // Use process.env.API_KEY exclusively as per guidelines
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
   const prompt = `
     Professional high-end minimalist logo design. ${visualDescription}
@@ -168,8 +165,7 @@ export const generateLogoVisual = async (visualDescription: string): Promise<str
 };
 
 export const editLogoVisual = async (imageBase64: string, editPrompt: string): Promise<string> => {
-  // Use process.env.API_KEY exclusively as per guidelines
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
   const prompt = `
