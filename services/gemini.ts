@@ -127,13 +127,12 @@ export const refineConcept = async (originalConcept: LogoConcept, feedback: stri
 
 export const generateLogoVisual = async (visualDescription: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
-  // Refined prompt for higher quality results with Imagen 3
   const prompt = `Professional high-end minimalist logo design, vector graphics style, clean lines, flat design, solid white background. Focal elements: ${visualDescription}. NO realistic photo details, NO complex shading, NO text.`;
 
   try {
-    // Switching to generateImages with an Imagen model as hinted by the user for better reliability
+    // Model ismini 'imagen-3' olarak sadeleştiriyoruz
     const response = await ai.models.generateImages({
-      model: 'imagen-3-generate-001',
+      model: 'imagen-3', 
       prompt: prompt,
       config: {
         numberOfImages: 1,
@@ -146,7 +145,7 @@ export const generateLogoVisual = async (visualDescription: string): Promise<str
       return `data:image/png;base64,${base64}`;
     }
     
-    throw new Error("No image data returned from Imagen model");
+    throw new Error("No image data returned");
   } catch (error) {
     console.error("Error generating image:", error);
     throw error;
@@ -164,7 +163,7 @@ export const editLogoVisual = async (imageBase64: string, editPrompt: string): P
 
   try {
      const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image', // gemini-2.5-flash-image is required for multimodal generateContent editing
+      model: 'gemini-1.5-flash', // gemini-2.5-flash-image is required for multimodal generateContent editing
       contents: {
         parts: [
           { inlineData: { mimeType: 'image/png', data: base64Data } },
