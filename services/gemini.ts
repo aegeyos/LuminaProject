@@ -2,7 +2,6 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { LogoConcept } from '../types';
 
 export const generateConcepts = async (businessName: string, industry: string, style: string): Promise<LogoConcept[]> => {
-  // Use import.meta.env.VITE_GEMINI_API_KEY as requested for Vite/Vercel environment compatibility
   const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
   
   const prompt = `
@@ -128,36 +127,26 @@ export const refineConcept = async (originalConcept: LogoConcept, feedback: stri
 
 export const generateLogoVisual = async (visualDescription: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
-
-  const prompt = `
-    Professional high-end minimalist logo design. ${visualDescription}
-    
-    Style Guidelines:
-    - Vector graphics style, clean lines, flat design.
-    - Solid white background.
-    - NO realistic photo details, NO complex shading, NO text inside the logo symbol.
-    - Balanced composition, elegant proportions.
-  `;
+  // Refined prompt for higher quality results with Imagen 3
+  const prompt = `Professional high-end minimalist logo design, vector graphics style, clean lines, flat design, solid white background. Focal elements: ${visualDescription}. NO realistic photo details, NO complex shading, NO text.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [{ text: prompt }],
-      },
+    // Switching to generateImages with an Imagen model as hinted by the user for better reliability
+    const response = await ai.models.generateImages({
+      model: 'imagen-3-generate-001',
+      prompt: prompt,
       config: {
-        imageConfig: {
-          aspectRatio: "1:1"
-        }
+        numberOfImages: 1,
+        aspectRatio: "1:1"
       }
     });
 
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
-      }
+    if (response.generatedImages && response.generatedImages.length > 0) {
+      const base64 = response.generatedImages[0].image.imageBytes;
+      return `data:image/png;base64,${base64}`;
     }
-    throw new Error("No image data found");
+    
+    throw new Error("No image data returned from Imagen model");
   } catch (error) {
     console.error("Error generating image:", error);
     throw error;
@@ -170,12 +159,12 @@ export const editLogoVisual = async (imageBase64: string, editPrompt: string): P
 
   const prompt = `
     Edit this logo design based on: "${editPrompt}"
-    Keep it as a clean vector logo on a white background. Maintain consistent style.
+    Maintain the existing professional style: clean vector logo, solid white background, flat colors, no text.
   `;
 
   try {
      const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-2.5-flash-image', // gemini-2.5-flash-image is required for multimodal generateContent editing
       contents: {
         parts: [
           { inlineData: { mimeType: 'image/png', data: base64Data } },
@@ -184,12 +173,15 @@ export const editLogoVisual = async (imageBase64: string, editPrompt: string): P
       },
     });
 
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
+    if (response.candidates && response.candidates[0].content.parts) {
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          return `data:image/png;base64,${part.inlineData.data}`;
+        }
       }
     }
-    throw new Error("No image data found");
+    
+    throw new Error("No image data found after editing attempt");
   } catch (error) {
     console.error("Error editing image:", error);
     throw error;
