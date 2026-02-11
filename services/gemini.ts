@@ -1,8 +1,15 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { LogoConcept } from '../types';
 
+/**
+ * Fix: Use process.env.API_KEY exclusively for API key access as per @google/genai guidelines.
+ * Always create a new instance before API calls to ensure it uses the latest key from the execution context.
+ */
+const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+
 export const generateConcepts = async (businessName: string, industry: string, style: string): Promise<LogoConcept[]> => {
-  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+  const ai = getAI();
   
   const prompt = `
     You are a world-class brand identity designer. 
@@ -14,14 +21,14 @@ export const generateConcepts = async (businessName: string, industry: string, s
     
     Guidelines:
     - Focus heavily on the requested style: "${style}".
-    - STRICTLY AVOID generic stock imagery (e.g., no generic lightbulbs for ideas, no generic globes for tech).
+    - STRICTLY AVOID generic stock imagery.
     - Focus on unique geometric abstractions, clever negative space, or custom illustrative styles.
-    - Explicitly describe the focal point, the usage of negative space, and the stroke weight/style (e.g., monoline, variable width) in the visual description.
+    - Explicitly describe the focal point and the usage of negative space.
     - Provide a detailed color palette for each concept including specific HEX codes.
 
     For each concept, provide:
     1. A creative Name.
-    2. A detailed visual prompt description (including composition, focal points, stroke details).
+    2. A detailed visual prompt description.
     3. The rationale/meaning.
     4. A detailed color palette (Primary, Secondary, Accent) with HEX codes.
   `;
@@ -70,7 +77,7 @@ export const generateConcepts = async (businessName: string, industry: string, s
 };
 
 export const refineConcept = async (originalConcept: LogoConcept, feedback: string): Promise<LogoConcept> => {
-  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+  const ai = getAI();
 
   const prompt = `
     You are an expert design consultant iteratively refining a logo concept.
@@ -83,7 +90,6 @@ export const refineConcept = async (originalConcept: LogoConcept, feedback: stri
     
     Task:
     - Revise the concept based strictly on the user feedback.
-    - Ensure the visual description is highly detailed (focal points, negative space, stroke) and optimized for high-quality image generation.
   `;
 
   try {
@@ -125,35 +131,43 @@ export const refineConcept = async (originalConcept: LogoConcept, feedback: stri
   }
 };
 
+/**
+ * Fix: Use gemini-2.5-flash-image via generateContent as the default for image generation.
+ * This simplifies the logic and strictly adheres to the @google/genai guidelines for general tasks.
+ */
 export const generateLogoVisual = async (visualDescription: string): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+  const ai = getAI();
   const prompt = `Professional high-end minimalist logo design, vector graphics style, clean lines, flat design, solid white background. Focal elements: ${visualDescription}. NO realistic photo details, NO complex shading, NO text.`;
 
   try {
-    // Model ismini 'imagen-3' olarak sadeleştiriyoruz
-    const response = await ai.models.generateImages({
-      model: 'imagen-3', 
-      prompt: prompt,
+    // Generate image using the recommended gemini-2.5-flash-image model
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: { parts: [{ text: prompt }] },
       config: {
-        numberOfImages: 1,
-        aspectRatio: "1:1"
+        imageConfig: {
+          aspectRatio: "1:1"
+        }
       }
     });
 
-    if (response.generatedImages && response.generatedImages.length > 0) {
-      const base64 = response.generatedImages[0].image.imageBytes;
-      return `data:image/png;base64,${base64}`;
+    if (response.candidates && response.candidates[0]?.content?.parts) {
+      // Find the image part in the response, do not assume it is the first part.
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData && part.inlineData.data) {
+          return `data:image/png;base64,${part.inlineData.data}`;
+        }
+      }
     }
-    
-    throw new Error("No image data returned");
+    throw new Error("Model failed to generate inline image data.");
   } catch (error) {
-    console.error("Error generating image:", error);
-    throw error;
+    console.error("Critical error: Image generation failed.", error);
+    throw new Error("Unable to visualize concept at this time. Please try a different description.");
   }
 };
 
 export const editLogoVisual = async (imageBase64: string, editPrompt: string): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+  const ai = getAI();
   const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
   const prompt = `
@@ -163,7 +177,7 @@ export const editLogoVisual = async (imageBase64: string, editPrompt: string): P
 
   try {
      const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash', // gemini-2.5-flash-image is required for multimodal generateContent editing
+      model: 'gemini-2.5-flash-image',
       contents: {
         parts: [
           { inlineData: { mimeType: 'image/png', data: base64Data } },
@@ -172,9 +186,10 @@ export const editLogoVisual = async (imageBase64: string, editPrompt: string): P
       },
     });
 
-    if (response.candidates && response.candidates[0].content.parts) {
+    if (response.candidates && response.candidates[0]?.content?.parts) {
+      // Iterate through all parts to find the image part.
       for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) {
+        if (part.inlineData && part.inlineData.data) {
           return `data:image/png;base64,${part.inlineData.data}`;
         }
       }
